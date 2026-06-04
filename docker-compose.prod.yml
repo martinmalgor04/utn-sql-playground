@@ -28,12 +28,20 @@ services:
       postgres:
         condition: service_healthy
     restart: always
+    networks:
+      - dokploy-network
+      - default
     labels:
       - "traefik.enable=true"
+      - "traefik.docker.network=dokploy-network"
       - "traefik.http.routers.utn-sql.rule=Host(`${APP_DOMAIN}`)"
       - "traefik.http.routers.utn-sql.entrypoints=websecure"
       - "traefik.http.routers.utn-sql.tls.certresolver=letsencrypt"
       - "traefik.http.services.utn-sql.loadbalancer.server.port=5000"
+
+networks:
+  dokploy-network:
+    external: true
 
 volumes:
   postgres_data:
