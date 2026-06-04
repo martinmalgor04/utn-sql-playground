@@ -137,8 +137,9 @@ body{background:var(--bg);color:var(--tx);font-family:'Segoe UI',system-ui,sans-
 #toolbar-spacer{flex:1;}
 #btn-run{background:var(--acc);color:#fff;border:none;border-radius:7px;padding:0.45rem 1.1rem;font-size:0.82rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:0.4rem;white-space:nowrap;}
 #btn-run:hover{background:#7c75ff;}
-#btn-clear{background:none;border:1px solid var(--bd);color:var(--mu);border-radius:7px;padding:0.45rem 0.8rem;font-size:0.82rem;cursor:pointer;}
-#btn-clear:hover{border-color:var(--tx);color:var(--tx);}
+#btn-clear{background:none;border:1px solid rgba(255,100,100,.35);color:#ff7070;border-radius:7px;padding:0.45rem 0.8rem;font-size:0.82rem;cursor:pointer;transition:all .15s;}
+#btn-clear:hover{background:rgba(255,100,100,.12);border-color:#ff7070;color:#ffaaaa;}
+#btn-clear.flashing{background:rgba(255,100,100,.25);}
 #btn-done{background:none;border:1px solid rgba(67,217,173,.3);color:var(--g);border-radius:7px;padding:0.45rem 0.8rem;font-size:0.82rem;cursor:pointer;}
 #btn-done:hover{background:rgba(67,217,173,.1);}
 #btn-apunte{background:none;border:1px solid rgba(255,209,102,.3);color:var(--y);border-radius:7px;padding:0.45rem 0.8rem;font-size:0.82rem;cursor:pointer;text-decoration:none;white-space:nowrap;}
@@ -462,6 +463,11 @@ function toggleGroup(gid) {
 function clearEditor() {
   document.getElementById('sql-editor').value = '';
   clearResult();
+  // feedback visual
+  const btn = document.getElementById('btn-clear');
+  btn.textContent = '✓ Limpio';
+  btn.classList.add('flashing');
+  setTimeout(() => { btn.textContent = 'Limpiar'; btn.classList.remove('flashing'); }, 800);
 }
 
 function clearResult() {
