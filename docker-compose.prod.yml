@@ -26,6 +26,8 @@ services:
       DB_PASS: ${READONLY_PASSWORD}
       DB_ADMIN_USER: admin
       DB_ADMIN_PASS: ${POSTGRES_PASSWORD}
+    ports:
+      - "3579:5000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -33,13 +35,6 @@ services:
     networks:
       - dokploy-network
       - default
-    labels:
-      - "traefik.enable=true"
-      - "traefik.docker.network=dokploy-network"
-      - "traefik.http.routers.utn-sql.rule=Host(`${APP_DOMAIN}`)"
-      - "traefik.http.routers.utn-sql.entrypoints=websecure"
-      - "traefik.http.routers.utn-sql.tls.certresolver=letsencrypt"
-      - "traefik.http.services.utn-sql.loadbalancer.server.port=5000"
 
 networks:
   dokploy-network:
