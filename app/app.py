@@ -6,6 +6,16 @@ import re
 
 app = Flask(__name__)
 
+# Credenciales admin (para setup inicial y local)
+ADMIN_CONFIG = {
+    "host": os.getenv("DB_HOST", "postgres"),
+    "port": 5432,
+    "dbname": os.getenv("DB_NAME", "utn_bd"),
+    "user": os.getenv("DB_ADMIN_USER", "admin"),
+    "password": os.getenv("DB_ADMIN_PASS", "admin"),
+}
+
+# Credenciales para ejecutar queries del usuario (readonly en prod, admin en local)
 DB_CONFIG = {
     "host": os.getenv("DB_HOST", "postgres"),
     "port": 5432,
@@ -16,6 +26,31 @@ DB_CONFIG = {
 
 def get_conn():
     return psycopg2.connect(**DB_CONFIG)
+
+def setup_readonly_user():
+    """Crea el usuario readonly si no existe. Corre al iniciar la app."""
+    readonly_user = os.getenv("DB_USER", "admin")
+    readonly_pass = os.getenv("DB_PASS", "admin")
+    if readonly_user == "admin":
+        return  # modo local, no hace falta crear nada
+    try:
+        conn = psycopg2.connect(**ADMIN_CONFIG)
+        conn.autocommit = True
+        cur = conn.cursor()
+        # Crear usuario si no existe
+        cur.execute(f"SELECT 1 FROM pg_roles WHERE rolname = %s", (readonly_user,))
+        if not cur.fetchone():
+            cur.execute(f"CREATE USER {readonly_user} WITH PASSWORD %s", (readonly_pass,))
+            print(f"[setup] Usuario '{readonly_user}' creado.")
+        cur.execute(f"GRANT CONNECT ON DATABASE {ADMIN_CONFIG['dbname']} TO {readonly_user}")
+        cur.execute(f"GRANT USAGE ON SCHEMA public TO {readonly_user}")
+        cur.execute(f"GRANT SELECT ON ALL TABLES IN SCHEMA public TO {readonly_user}")
+        cur.execute(f"ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT SELECT ON TABLES TO {readonly_user}")
+        cur.close()
+        conn.close()
+        print(f"[setup] Permisos SELECT otorgados a '{readonly_user}'.")
+    except Exception as e:
+        print(f"[setup] Error configurando usuario readonly: {e}")
 
 BLOCKED_KEYWORDS = ['drop', 'delete', 'update', 'insert', 'truncate', 'alter', 'create', 'grant', 'revoke']
 
@@ -1116,4 +1151,5 @@ hr{border:none;border-top:1px solid var(--bd);margin:2rem 0;}
 """
 
 if __name__ == "__main__":
+    setup_readonly_user()
     app.run(host="0.0.0.0", port=5000, debug=False)
