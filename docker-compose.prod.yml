@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: utn_bd_postgres
+    environment:
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: utn_bd
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init:/docker-entrypoint-initdb.d
+    restart: always
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U admin -d utn_bd"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: ./app
+    container_name: utn_bd_app
+    environment:
+      DB_HOST: postgres
+      DB_NAME: utn_bd
+      DB_USER: readonly
+      DB_PASS: ${READONLY_PASSWORD}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.utn-sql.rule=Host(`${APP_DOMAIN}`)"
+      - "traefik.http.routers.utn-sql.entrypoints=websecure"
+      - "traefik.http.routers.utn-sql.tls.certresolver=letsencrypt"
+      - "traefik.http.services.utn-sql.loadbalancer.server.port=5000"
+
+volumes:
+  postgres_data:

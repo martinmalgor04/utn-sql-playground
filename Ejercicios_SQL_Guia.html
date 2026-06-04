@@ -1,0 +1,766 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Guía SQL Interactiva — BD UTN</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --surface2: #222538;
+    --border: #2e3250;
+    --accent: #6c63ff;
+    --accent2: #ff6584;
+    --accent3: #43d9ad;
+    --accent4: #ffd166;
+    --accent5: #ff9f43;
+    --text: #e2e4f0;
+    --muted: #8b8fad;
+    --code-bg: #12141e;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    display: flex;
+    min-height: 100vh;
+  }
+
+  /* SIDEBAR */
+  .sidebar {
+    width: 260px;
+    flex-shrink: 0;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 1.5rem 1rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+  .sidebar h2 {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  .nav-scenario {
+    margin-bottom: 1.2rem;
+  }
+  .nav-scenario-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text);
+    padding: 0.4rem 0.6rem;
+    border-radius: 6px;
+    cursor: pointer;
+    text-decoration: none;
+  }
+  .nav-scenario-title:hover { background: rgba(255,255,255,0.05); }
+  .nav-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* CONEXIÓN CARD */
+  .conn-card {
+    background: var(--code-bg);
+    border: 1px solid rgba(108,99,255,0.3);
+    border-radius: 10px;
+    padding: 1rem;
+    margin-top: 1.5rem;
+    font-size: 0.78rem;
+  }
+  .conn-card h3 { color: #a09aff; margin-bottom: 0.6rem; font-size: 0.78rem; }
+  .conn-row { display: flex; justify-content: space-between; padding: 0.2rem 0; }
+  .conn-label { color: var(--muted); }
+  .conn-val { color: var(--accent3); font-family: monospace; }
+  .conn-link {
+    display: block;
+    text-align: center;
+    margin-top: 0.8rem;
+    background: rgba(108,99,255,0.2);
+    border: 1px solid rgba(108,99,255,0.4);
+    color: #a09aff;
+    padding: 0.5rem;
+    border-radius: 6px;
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  .conn-link:hover { background: rgba(108,99,255,0.35); }
+
+  /* MAIN */
+  .main {
+    flex: 1;
+    padding: 2rem;
+    max-width: 860px;
+  }
+
+  header {
+    margin-bottom: 2.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    font-size: 1.8rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6c63ff, #43d9ad);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  header p { color: var(--muted); font-size: 0.9rem; margin-top: 0.3rem; }
+
+  /* SCENARIO BLOCK */
+  .scenario {
+    margin-bottom: 2.5rem;
+  }
+  .scenario-header {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    margin-bottom: 1.2rem;
+  }
+  .scenario-badge {
+    width: 40px; height: 40px;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 1.1rem;
+    flex-shrink: 0;
+  }
+  .s1 .scenario-badge { background: rgba(108,99,255,0.2); color: #a09aff; }
+  .s2 .scenario-badge { background: rgba(67,217,173,0.2); color: #43d9ad; }
+  .s3 .scenario-badge { background: rgba(255,101,132,0.2); color: #ff6584; }
+  .s4 .scenario-badge { background: rgba(255,209,102,0.2); color: #ffd166; }
+
+  .scenario-header h2 { font-size: 1.15rem; font-weight: 700; }
+  .scenario-header p { font-size: 0.82rem; color: var(--muted); margin-top: 0.1rem; }
+
+  /* SCHEMA */
+  .schema-box {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 1.2rem;
+    font-family: 'Cascadia Code', 'Fira Code', monospace;
+    font-size: 0.83rem;
+    line-height: 1.8;
+  }
+  .schema-table { color: #ffd166; font-weight: 600; }
+  .schema-attr  { color: #c9d1ff; }
+  .schema-type  { color: #8b8fad; }
+  .schema-pk    { color: #43d9ad; }
+
+  /* EXERCISE LIST */
+  .ex-list { list-style: none; }
+  .ex-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.9rem;
+    padding: 0.75rem 0.9rem;
+    border-radius: 8px;
+    margin-bottom: 0.4rem;
+    border: 1px solid transparent;
+    transition: border-color 0.15s, background 0.15s;
+    cursor: pointer;
+  }
+  .ex-item:hover {
+    background: rgba(255,255,255,0.03);
+    border-color: var(--border);
+  }
+  .ex-item.done {
+    background: rgba(67,217,173,0.05);
+    border-color: rgba(67,217,173,0.2);
+  }
+  .ex-num {
+    width: 26px; height: 26px;
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+  .s1 .ex-num { background: rgba(108,99,255,0.15); color: #a09aff; }
+  .s2 .ex-num { background: rgba(67,217,173,0.15); color: #43d9ad; }
+  .s3 .ex-num { background: rgba(255,101,132,0.15); color: #ff6584; }
+  .s4 .ex-num { background: rgba(255,209,102,0.15); color: #ffd166; }
+
+  .ex-item.done .ex-num::after { content: '✓'; }
+  .ex-item:not(.done) .ex-num-inner { display: block; }
+  .ex-item.done .ex-num-inner { display: none; }
+
+  .ex-body { flex: 1; }
+  .ex-text { font-size: 0.88rem; line-height: 1.5; }
+  .ex-tags { display: flex; gap: 0.4rem; margin-top: 0.35rem; flex-wrap: wrap; }
+  .tag {
+    font-size: 0.68rem;
+    padding: 0.1rem 0.5rem;
+    border-radius: 20px;
+    font-weight: 600;
+  }
+  .tag-basic  { background: rgba(67,217,173,0.12); color: #43d9ad; border: 1px solid rgba(67,217,173,0.3); }
+  .tag-medium { background: rgba(255,209,102,0.12); color: #ffd166; border: 1px solid rgba(255,209,102,0.3); }
+  .tag-hard   { background: rgba(255,101,132,0.12); color: #ff6584; border: 1px solid rgba(255,101,132,0.3); }
+  .tag-concept { background: rgba(108,99,255,0.12); color: #a09aff; border: 1px solid rgba(108,99,255,0.3); }
+
+  .check-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    border-radius: 6px;
+    padding: 0.25rem 0.6rem;
+    font-size: 0.72rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .check-btn:hover { border-color: #43d9ad; color: #43d9ad; }
+  .ex-item.done .check-btn { border-color: rgba(67,217,173,0.4); color: #43d9ad; }
+
+  /* PROGRESS BAR */
+  .progress-wrap {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 1rem 1.2rem;
+    margin-bottom: 2rem;
+  }
+  .progress-header { display: flex; justify-content: space-between; margin-bottom: 0.6rem; font-size: 0.85rem; }
+  .progress-label { color: var(--muted); }
+  .progress-count { color: var(--accent3); font-weight: 700; }
+  .progress-bar { height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .progress-fill { height: 100%; background: linear-gradient(90deg, #6c63ff, #43d9ad); border-radius: 3px; transition: width 0.3s; }
+
+  /* DIVIDER */
+  .divider { border: none; border-top: 1px solid var(--border); margin: 2rem 0; }
+
+  @media (max-width: 700px) {
+    .sidebar { display: none; }
+    .main { padding: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <h2>Escenarios</h2>
+
+  <div class="nav-scenario">
+    <a href="#s1" class="nav-scenario-title">
+      <span class="nav-dot" style="background:#a09aff"></span>
+      1. Proveedores
+    </a>
+  </div>
+  <div class="nav-scenario">
+    <a href="#s2" class="nav-scenario-title">
+      <span class="nav-dot" style="background:#43d9ad"></span>
+      2. Vuelos & Pilotos
+    </a>
+  </div>
+  <div class="nav-scenario">
+    <a href="#s3" class="nav-scenario-title">
+      <span class="nav-dot" style="background:#ff6584"></span>
+      3. Universidad
+    </a>
+  </div>
+  <div class="nav-scenario">
+    <a href="#s4" class="nav-scenario-title">
+      <span class="nav-dot" style="background:#ffd166"></span>
+      4. Empresa
+    </a>
+  </div>
+
+  <div class="conn-card">
+    <h3>🐳 Conexión Docker</h3>
+    <div class="conn-row"><span class="conn-label">Sistema</span><span class="conn-val">PostgreSQL</span></div>
+    <div class="conn-row"><span class="conn-label">Servidor</span><span class="conn-val">postgres</span></div>
+    <div class="conn-row"><span class="conn-label">Usuario</span><span class="conn-val">admin</span></div>
+    <div class="conn-row"><span class="conn-label">Password</span><span class="conn-val">admin</span></div>
+    <div class="conn-row"><span class="conn-label">Base</span><span class="conn-val">utn_bd</span></div>
+    <a href="http://localhost:8080" target="_blank" class="conn-link">Abrir Adminer →</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<main class="main">
+  <header>
+    <h1>Consultas SQL — Guía TP</h1>
+    <p>BD · UTN · 3er año · Hacé clic en los ejercicios para marcarlos como resueltos</p>
+  </header>
+
+  <!-- PROGRESS -->
+  <div class="progress-wrap">
+    <div class="progress-header">
+      <span class="progress-label">Progreso total</span>
+      <span class="progress-count" id="progress-text">0 / 39</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
+
+  <!-- ===== ESCENARIO 1 ===== -->
+  <section class="scenario s1" id="s1">
+    <div class="scenario-header">
+      <div class="scenario-badge">1</div>
+      <div>
+        <h2>Proveedores · Parts · Catalog</h2>
+        <p>12 ejercicios · JOINs, subconsultas, división, agregación</p>
+      </div>
+    </div>
+
+    <div class="schema-box">
+<span class="schema-table">Proveedores</span>(<span class="schema-pk">sid</span><span class="schema-type">: integer</span>, <span class="schema-attr">sname</span><span class="schema-type">: string</span>, <span class="schema-attr">address</span><span class="schema-type">: string</span>)
+<span class="schema-table">Parts</span>(<span class="schema-pk">pid</span><span class="schema-type">: integer</span>, <span class="schema-attr">pname</span><span class="schema-type">: string</span>, <span class="schema-attr">color</span><span class="schema-type">: string</span>)
+<span class="schema-table">Catalog</span>(<span class="schema-pk">sid</span><span class="schema-type">: integer</span>, <span class="schema-pk">pid</span><span class="schema-type">: integer</span>, <span class="schema-attr">cost</span><span class="schema-type">: real</span>)
+    </div>
+
+    <ul class="ex-list" id="list-s1">
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">1</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>snames</strong> de Proveedores que provean alguna parte <strong>roja</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-basic">Básico</span><span class="tag tag-concept">JOIN</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">2</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>sids</strong> de Proveedores que provean alguna parte <strong>roja o verde</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-basic">Básico</span><span class="tag tag-concept">OR / UNION</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">3</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>sids</strong> de Proveedores que provean alguna parte roja <strong>o</strong> vivan en <em>"221 Packer Street"</em>.</div>
+          <div class="ex-tags"><span class="tag tag-basic">Básico</span><span class="tag tag-concept">UNION</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">4</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>sids</strong> de Proveedores que provean alguna parte roja <strong>y</strong> alguna parte verde.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">INTERSECT</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">5</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>sids</strong> de Proveedores que provean <strong>cada parte</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">División / NOT EXISTS</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">6</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>sids</strong> de Proveedores que provean <strong>cada parte roja</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">División con filtro</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">7</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>sids</strong> de Proveedores que provean cada parte verde <strong>o</strong> roja.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">División + UNION</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">8</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>sids</strong> de Proveedores que provean cada parte roja <strong>o</strong> provean cada parte verde.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">División doble</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">9</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>pares de sids</strong> tal que el proveedor con el primer sid cueste <strong>más</strong> por alguna parte que el del segundo sid.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">Self JOIN</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">10</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>pids</strong> de partes provistas por al menos <strong>dos proveedores diferentes</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">GROUP BY / HAVING</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">11</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>pids</strong> de las partes <strong>más caras</strong> provistas por el proveedor llamado <em>Yosemite Sham</em>.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">Subconsulta / MAX</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">12</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>pids</strong> de partes provistas por <strong>cada proveedor</strong> a menos de <strong>$200</strong>. (Si algún proveedor no la provee o cuesta ≥$200, no se lista.)</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">División + condición de costo</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+    </ul>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== ESCENARIO 2 ===== -->
+  <section class="scenario s2" id="s2">
+    <div class="scenario-header">
+      <div class="scenario-badge">2</div>
+      <div>
+        <h2>Vuelos · Avión · Certificados · Empleados</h2>
+        <p>10 ejercicios · Subconsultas, agregación, salarios</p>
+      </div>
+    </div>
+
+    <div class="schema-box">
+<span class="schema-table">Vuelos</span>(<span class="schema-pk">flno</span><span class="schema-type">: integer</span>, <span class="schema-attr">from_city</span><span class="schema-type">: string</span>, <span class="schema-attr">to_city</span><span class="schema-type">: string</span>, <span class="schema-attr">distance</span><span class="schema-type">: integer</span>, <span class="schema-attr">departs</span><span class="schema-type">: time</span>, <span class="schema-attr">arrives</span><span class="schema-type">: time</span>)
+<span class="schema-table">Avion</span>(<span class="schema-pk">aid</span><span class="schema-type">: integer</span>, <span class="schema-attr">aname</span><span class="schema-type">: string</span>, <span class="schema-attr">cruisingrange</span><span class="schema-type">: integer</span>)
+<span class="schema-table">Certificados</span>(<span class="schema-pk">eid</span><span class="schema-type">: integer</span>, <span class="schema-pk">aid</span><span class="schema-type">: integer</span>)
+<span class="schema-table">Empleados</span>(<span class="schema-pk">eid</span><span class="schema-type">: integer</span>, <span class="schema-attr">ename</span><span class="schema-type">: string</span>, <span class="schema-attr">salary</span><span class="schema-type">: integer</span>)
+    </div>
+
+    <ul class="ex-list" id="list-s2">
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">a</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>eids</strong> de pilotos certificados para algún avión <strong>Boeing</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-basic">Básico</span><span class="tag tag-concept">JOIN + LIKE</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">b</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>nombres</strong> de pilotos certificados para algún avión Boeing.</div>
+          <div class="ex-tags"><span class="tag tag-basic">Básico</span><span class="tag tag-concept">JOIN múltiple</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">c</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>aids</strong> de todos los aviones que pueden ser usados para vuelos <strong>sin parada desde Bonn hasta Madras</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">Subconsulta + comparación</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">d</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Identifique los vuelos que pueden ser piloteados por <strong>cada piloto</strong> cuyo salario sea mayor a $100,000.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">División / NOT EXISTS</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">e</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>nombres</strong> de pilotos que pueden operar aviones con rango > 3,000 millas pero que <strong>NO</strong> estén certificados para aviones Boeing.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">EXCEPT / NOT IN</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">f</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>eids</strong> de empleados que ganan el <strong>mayor salario</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">MAX / subconsulta</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">g</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>eids</strong> de empleados que ganen el <strong>segundo mayor salario</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">Subconsulta anidada</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">h</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>eids</strong> de empleados que están certificados para el <strong>mayor número de aviones</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">GROUP BY / HAVING / MAX</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">i</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>eids</strong> de empleados que están certificados para exactamente <strong>3 aviones</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">GROUP BY + HAVING COUNT = 3</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">j</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre la <strong>cantidad total de dinero</strong> pagado en concepto de salario.</div>
+          <div class="ex-tags"><span class="tag tag-basic">Básico</span><span class="tag tag-concept">SUM</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+    </ul>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== ESCENARIO 3 ===== -->
+  <section class="scenario s3" id="s3">
+    <div class="scenario-header">
+      <div class="scenario-badge">3</div>
+      <div>
+        <h2>Student · Class · Inscripto · Faculty</h2>
+        <p>11 ejercicios · GROUP BY, HAVING, subconsultas correlacionadas</p>
+      </div>
+    </div>
+
+    <div class="schema-box">
+<span class="schema-table">Student</span>(<span class="schema-pk">snum</span><span class="schema-type">: integer</span>, <span class="schema-attr">sname</span><span class="schema-type">: string</span>, <span class="schema-attr">major</span><span class="schema-type">: string</span>, <span class="schema-attr">level</span><span class="schema-type">: string</span>, <span class="schema-attr">age</span><span class="schema-type">: integer</span>)
+<span class="schema-table">Class</span>(<span class="schema-pk">name</span><span class="schema-type">: string</span>, <span class="schema-attr">meets_at</span><span class="schema-type">: string</span>, <span class="schema-attr">room</span><span class="schema-type">: string</span>, <span class="schema-attr">fid</span><span class="schema-type">: integer</span>)
+<span class="schema-table">Inscripto</span>(<span class="schema-pk">snum</span><span class="schema-type">: integer</span>, <span class="schema-pk">cname</span><span class="schema-type">: string</span>)
+<span class="schema-table">Faculty</span>(<span class="schema-pk">fid</span><span class="schema-type">: integer</span>, <span class="schema-attr">fname</span><span class="schema-type">: string</span>, <span class="schema-attr">deptid</span><span class="schema-type">: integer</span>)
+    </div>
+
+    <ul class="ex-list" id="list-s3">
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">a</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los nombres de todos los estudiantes <strong>Juniors (level = JR)</strong> que estén enrolados en una clase dictada por <em>I. Teach</em>.</div>
+          <div class="ex-tags"><span class="tag tag-basic">Básico</span><span class="tag tag-concept">JOIN + WHERE</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">b</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los nombres de todas las clases que estén en el <strong>aula R128</strong> o tengan <strong>más de 5 estudiantes inscriptos</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">UNION / OR + GROUP BY</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">c</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los nombres de todos los estudiantes que están inscriptos en <strong>dos clases que comiencen a la misma hora</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">Self JOIN</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">d</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los nombres de miembros de la facultad que <strong>dictan en cada aula</strong> en la cual se dicta alguna clase.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">División</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">e</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los nombres de miembros de la facultad para quienes la inscripción combinada de sus cursos es <strong>menos de cinco</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">GROUP BY + HAVING COUNT &lt; 5</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">f</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Para cada nivel, liste el nivel y el <strong>promedio de edad</strong> de los estudiantes de ese nivel.</div>
+          <div class="ex-tags"><span class="tag tag-basic">Básico</span><span class="tag tag-concept">GROUP BY + AVG</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">g</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Para todos los niveles <strong>excepto JR</strong>, liste el nivel y el promedio de edad.</div>
+          <div class="ex-tags"><span class="tag tag-basic">Básico</span><span class="tag tag-concept">GROUP BY + HAVING + WHERE</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">h</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Para cada miembro de la facultad que da clases en el <strong>aula R128</strong>, liste su nombre y el <strong>total de clases que dicta</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">JOIN + GROUP BY + filtro</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">i</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los nombres de estudiantes inscriptos en el <strong>máximo número de clases</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">Subconsulta + MAX COUNT</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">j</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los nombres de estudiantes <strong>no inscriptos en ninguna clase</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">NOT IN / NOT EXISTS</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">k</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Para cada valor de edad en Student, encuentre el <strong>nivel que aparece más frecuentemente</strong>. Ej: (18, FR).</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">GROUP BY + modo / RANK</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+    </ul>
+  </section>
+
+  <hr class="divider">
+
+  <!-- ===== ESCENARIO 4 ===== -->
+  <section class="scenario s4" id="s4">
+    <div class="scenario-header">
+      <div class="scenario-badge">4</div>
+      <div>
+        <h2>Emp · Works · Dept</h2>
+        <p>6 ejercicios · Gerentes, presupuestos, agregación avanzada</p>
+      </div>
+    </div>
+
+    <div class="schema-box">
+<span class="schema-table">Emp</span>(<span class="schema-pk">eid</span><span class="schema-type">: integer</span>, <span class="schema-attr">ename</span><span class="schema-type">: string</span>, <span class="schema-attr">age</span><span class="schema-type">: integer</span>, <span class="schema-attr">salary</span><span class="schema-type">: real</span>)
+<span class="schema-table">Works</span>(<span class="schema-pk">eid</span><span class="schema-type">: integer</span>, <span class="schema-pk">did</span><span class="schema-type">: integer</span>, <span class="schema-attr">pct_time</span><span class="schema-type">: integer</span>)
+<span class="schema-table">Dept</span>(<span class="schema-pk">did</span><span class="schema-type">: integer</span>, <span class="schema-attr">dname</span><span class="schema-type">: string</span>, <span class="schema-attr">budget</span><span class="schema-type">: real</span>, <span class="schema-attr">managerid</span><span class="schema-type">: integer</span>)
+    </div>
+
+    <ul class="ex-list" id="list-s4">
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">a</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Liste los nombres y edades de cada empleado que trabaje en los departamentos de <strong>Hardware</strong> y <strong>Software</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">INTERSECT / JOIN doble</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">b</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>managerids</strong> de gerentes que administran <strong>solo departamentos con presupuesto mayor a $1.000.000</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">NOT EXISTS / ALL</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">c</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>enames</strong> de gerentes que administran los departamentos con los <strong>mayores presupuestos totales</strong>. (Si administra más de uno, sumar.)</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">GROUP BY + SUM + MAX</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">d</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>managerids</strong> de gerentes que controlan <strong>más de $5.000.000</strong> en presupuesto total.</div>
+          <div class="ex-tags"><span class="tag tag-medium">Medio</span><span class="tag tag-concept">GROUP BY + HAVING SUM</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">e</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>managerids</strong> de gerentes que controlan los <strong>mayores presupuestos</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">Subconsulta + MAX SUM</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+      <li class="ex-item" onclick="toggle(this)">
+        <div class="ex-num"><span class="ex-num-inner">f</span></div>
+        <div class="ex-body">
+          <div class="ex-text">Encuentre los <strong>enames</strong> de gerentes que administran <strong>solo departamentos con budget > $1M</strong>, pero <strong>al menos uno con budget < $5M</strong>.</div>
+          <div class="ex-tags"><span class="tag tag-hard">Difícil</span><span class="tag tag-concept">NOT EXISTS + condición doble</span></div>
+        </div>
+        <button class="check-btn">✓</button>
+      </li>
+    </ul>
+  </section>
+
+</main>
+
+<script>
+  const TOTAL = 39;
+  const STORAGE_KEY = 'sql_utn_progress';
+
+  function loadProgress() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; }
+  }
+  function saveProgress(state) {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  function toggle(li) {
+    const state = loadProgress();
+    const id = li.closest('ul').id + '_' + Array.from(li.closest('ul').children).indexOf(li);
+    if (li.classList.contains('done')) {
+      li.classList.remove('done');
+      li.querySelector('.ex-num-inner').style.display = '';
+      delete state[id];
+    } else {
+      li.classList.add('done');
+      li.querySelector('.ex-num-inner').style.display = 'none';
+      state[id] = true;
+    }
+    saveProgress(state);
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const state = loadProgress();
+    const done = Object.keys(state).length;
+    document.getElementById('progress-text').textContent = done + ' / ' + TOTAL;
+    document.getElementById('progress-fill').style.width = (done / TOTAL * 100) + '%';
+  }
+
+  function restoreProgress() {
+    const state = loadProgress();
+    document.querySelectorAll('.ex-list').forEach(ul => {
+      Array.from(ul.children).forEach((li, idx) => {
+        const id = ul.id + '_' + idx;
+        if (state[id]) {
+          li.classList.add('done');
+          li.querySelector('.ex-num-inner').style.display = 'none';
+        }
+      });
+    });
+    updateProgress();
+  }
+
+  restoreProgress();
+</script>
+</body>
+</html>
