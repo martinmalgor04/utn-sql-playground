@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   postgres:
     build:
@@ -13,6 +11,8 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     restart: always
+    networks:
+      - utn_internal
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d utn_bd"]
       interval: 5s
@@ -25,7 +25,7 @@ services:
       dockerfile: app/Dockerfile
     container_name: utn_bd_app
     environment:
-      DB_HOST: postgres
+      DB_HOST: utn_bd_postgres
       DB_NAME: utn_bd
       DB_USER: readonly
       DB_PASS: UtnSQL
@@ -38,9 +38,12 @@ services:
         condition: service_healthy
     restart: always
     networks:
+      - utn_internal
       - dokploy-network
 
 networks:
+  utn_internal:
+    driver: bridge
   dokploy-network:
     external: true
 
