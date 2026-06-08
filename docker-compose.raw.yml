@@ -2,7 +2,9 @@ version: '3.8'
 
 services:
   postgres:
-    image: postgres:16-alpine
+    build:
+      context: https://github.com/martinmalgor04/utn-sql-playground.git#main
+      dockerfile: Dockerfile.postgres
     container_name: utn_bd_postgres
     environment:
       POSTGRES_USER: admin
@@ -10,7 +12,6 @@ services:
       POSTGRES_DB: utn_bd
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./init:/docker-entrypoint-initdb.d
     restart: always
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U admin -d utn_bd"]
