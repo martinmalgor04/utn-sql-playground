@@ -37,11 +37,14 @@ def setup_readonly_user():
         conn = psycopg2.connect(**ADMIN_CONFIG)
         conn.autocommit = True
         cur = conn.cursor()
-        # Crear usuario si no existe
+        # Crear usuario si no existe; si existe, sincronizar la contraseña
         cur.execute(f"SELECT 1 FROM pg_roles WHERE rolname = %s", (readonly_user,))
         if not cur.fetchone():
             cur.execute(f"CREATE USER {readonly_user} WITH PASSWORD %s", (readonly_pass,))
             print(f"[setup] Usuario '{readonly_user}' creado.")
+        else:
+            cur.execute(f"ALTER USER {readonly_user} WITH PASSWORD %s", (readonly_pass,))
+            print(f"[setup] Contraseña de '{readonly_user}' sincronizada.")
         cur.execute(f"GRANT CONNECT ON DATABASE {ADMIN_CONFIG['dbname']} TO {readonly_user}")
         cur.execute(f"GRANT USAGE ON SCHEMA public TO {readonly_user}")
         cur.execute(f"GRANT SELECT ON ALL TABLES IN SCHEMA public TO {readonly_user}")
